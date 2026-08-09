@@ -1,8 +1,13 @@
 // The Interview Agent — Main Application Controller (AI Cohort)
 
-const API_BASE = window.location.protocol === "file:"
-  ? "http://localhost:8000/api"
-  : `${window.location.origin}/api`;
+const ENDPOINT_PROVIDERS = [
+  `${window.location.origin}/api`,
+  "https://interview-agent-4han.onrender.com/api",
+  "https://ai-interview-agent-ten-peach.vercel.app/api",
+  "http://localhost:8000/api"
+];
+
+let activeEndpointIndex = 0;
 
 const state = {
   sessionId: null,
@@ -48,22 +53,49 @@ function showCustomConfirm(title, message, onConfirm) {
   modal.show();
 }
 
+// Multi-Host Resilient API Client with Automatic Failover (Localhost / Render / Vercel)
 async function api(path, opts = {}) {
   const headers = {
     "Content-Type": "application/json",
     ...Auth.getAuthHeader(),
     ...(opts.headers || {})
   };
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: opts.method || "GET",
-    headers: headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.detail || err.error || `Request failed (${res.status})`);
+
+  let lastError = null;
+
+  for (let i = 0; i < ENDPOINT_PROVIDERS.length; i++) {
+    const providerIdx = (activeEndpointIndex + i) % ENDPOINT_PROVIDERS.length;
+    const baseUrl = ENDPOINT_PROVIDERS[providerIdx];
+
+    try {
+      const res = await fetch(`${baseUrl}${path}`, {
+        method: opts.method || "GET",
+        headers: headers,
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+      });
+
+      if (res.ok) {
+        activeEndpointIndex = providerIdx; // Save working endpoint
+        return await res.json();
+      }
+
+      const errData = await res.json().catch(() => ({ error: res.statusText }));
+      lastError = new Error(errData.detail || errData.error || `HTTP ${res.status}`);
+
+      // If server error 500, failover to next host
+      if (res.status >= 500) {
+        console.warn(`Host ${baseUrl} returned ${res.status}, failing over...`);
+        continue;
+      } else {
+        throw lastError;
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn(`Host ${baseUrl} unreachable/error: ${e.message}`);
+    }
   }
-  return res.json();
+
+  throw lastError || new Error("All backend servers are unreachable.");
 }
 
 // ---------- Boot ----------
@@ -170,7 +202,7 @@ function renderCandidateGrid(candidates) {
       <div class="fw-bold fs-5 text-light mb-1">${c.name}</div>
       <div class="text-muted small mb-2">${c.cohort_progress_pct}% Cohort Curriculum Complete</div>
       <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
-        <div class="progress-bar" style="width: ${c.cohort_progress_pct}%; background:#6366f1;"></div>
+        <div class="progress-bar" style="width: ${c.cohort_progress_pct}%; background:var(--accent-primary);"></div>
       </div>
     </button>
   `).join("");
@@ -259,7 +291,7 @@ function speakQuestion(text) {
 }
 
 // -----------------------------------------------------------------------------
-// 10-Second Smart Voice Pause & Clean Speech Buffer Accumulation Engine
+// 5-Second Smart Voice Pause & Low-Pace Speech Auto-Submission Engine
 // -----------------------------------------------------------------------------
 function startAutoListening() {
   show("dictationStatus");
@@ -278,7 +310,8 @@ function startAutoListening() {
       state.currentTurnBuffer = combined;
     }
 
-    resetPauseTimer(10);
+    // 5-Second Auto-Send Countdown Trigger
+    resetPauseTimer(5);
   });
 }
 
@@ -300,7 +333,7 @@ function resetPauseTimer(secondsRemaining) {
 
   state.silenceTimer = setTimeout(() => {
     clearInterval(state.countdownInterval);
-    if (el("answerInput").value.trim().length > 3) {
+    if (el("answerInput").value.trim().length > 2) {
       submitAnswer();
     }
   }, secondsRemaining * 1000);

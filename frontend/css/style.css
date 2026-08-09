@@ -454,39 +454,76 @@ body::after {
 
 
 /* ==========================================================================
-   6. 14+ DEVICE MEDIA RESPONSIVENESS BREAKPOINT SYSTEM
-   Ranges: 320px, 375px, 414px, 480px, 576px, 768px, 992px, 1024px,
-           1200px, 1440px, 1600px, 1920px, 2560px (4K), Touch & Orientation
+   6. ADVANCED ORGANIZATIONAL MEDIA RESPONSIVENESS (15+ BREAKPOINTS)
+   Pixel-perfect styling for Phones, Tablets, Foldables, Laptops, 4K & Mobile
    ========================================================================== */
+
+/* Mobile Topbar Flex Grid Fix (< 576px) */
+@media (max-width: 576px) {
+  .topbar {
+    padding: 0.5rem 0.75rem;
+  }
+  .topbar .container-fluid {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .topbar .brand-name {
+    font-size: 0.95rem;
+  }
+  .topbar .brand-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+  .topbar .theme-select {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .topbar .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .topbar #apiStatus {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+  .auth-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
 
 /* Range 1: Extra Small / Compact Feature Phones (320px and below) */
 @media (max-width: 320px) {
   .topbar { padding: 0.5rem 0.75rem; }
-  .brand-name { font-size: 1rem; }
-  .brand-mark { width: 32px; height: 32px; font-size: 0.85rem; }
+  .brand-name { font-size: 0.9rem; }
+  .brand-mark { width: 30px; height: 30px; font-size: 0.8rem; }
   .media-frame { height: 160px; }
   .transcript-panel { height: 440px; }
   .btn-control { width: 38px; height: 38px; font-size: 0.9rem; }
   .hud-value { font-size: 0.9rem; }
+  .candidate-grid { grid-template-columns: 1fr; }
 }
 
 /* Range 2: Standard Mobile Phones (321px to 375px - e.g. iPhone SE, Mini) */
 @media (min-width: 321px) and (max-width: 375px) {
-  .topbar { padding: 0.65rem 1rem; }
   .media-frame { height: 180px; }
   .transcript-panel { height: 480px; }
+  .candidate-grid { grid-template-columns: 1fr; }
 }
 
-/* Range 3: Large Mobile / Plus Phones (376px to 414px - e.g. iPhone Max, Pixel XL) */
+/* Range 3: Large Mobile / Plus Phones (376px to 414px - e.g. iPhone Max, Pixel 7) */
 @media (min-width: 376px) and (max-width: 414px) {
   .media-frame { height: 190px; }
   .transcript-panel { height: 500px; }
+  .candidate-grid { grid-template-columns: 1fr; }
 }
 
 /* Range 4: Phablets & Small Foldables (415px to 576px) */
 @media (min-width: 415px) and (max-width: 576px) {
   .media-frame { height: 200px; }
   .transcript-panel { height: 520px; }
+  .candidate-grid { grid-template-columns: 1fr; }
 }
 
 /* Range 5: Small Tablets & Large Foldables (577px to 768px - e.g. iPad Mini) */
@@ -494,6 +531,7 @@ body::after {
   .room-layout { grid-template-columns: 1fr; }
   .media-frame { height: 240px; }
   .transcript-panel { height: 550px; }
+  .candidate-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Range 6: Tablets Landscape / Small Laptops (769px to 992px) */
@@ -501,6 +539,7 @@ body::after {
   .room-layout { grid-template-columns: 1fr; }
   .media-frame { height: 260px; }
   .transcript-panel { height: 580px; }
+  .candidate-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Range 7: iPad Pro & Small Laptops (993px to 1024px) */
@@ -508,6 +547,7 @@ body::after {
   .room-layout { grid-template-columns: 1fr 1fr; gap: 1.25rem; }
   .media-frame { height: 210px; }
   .transcript-panel { height: 580px; }
+  .candidate-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Range 8: Standard Laptop Displays (1025px to 1200px - e.g. MacBook Air 13") */
@@ -515,12 +555,14 @@ body::after {
   .room-layout { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
   .media-frame { height: 220px; }
   .transcript-panel { height: 600px; }
+  .candidate-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Range 9: Large Laptops & Standard Monitors (1201px to 1440px - e.g. MacBook Pro 16") */
 @media (min-width: 1201px) and (max-width: 1440px) {
   .media-frame { height: 240px; }
   .transcript-panel { height: 640px; }
+  .candidate-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Range 10: Desktop Monitors & 1080p Full HD (1441px to 1600px) */
@@ -528,6 +570,7 @@ body::after {
   .container { max-width: 1520px; }
   .media-frame { height: 260px; }
   .transcript-panel { height: 680px; }
+  .candidate-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* Range 11: High-Res QHD / 2K Monitors (1601px to 1920px) */
@@ -536,6 +579,7 @@ body::after {
   .media-frame { height: 280px; }
   .transcript-panel { height: 720px; }
   .msg { font-size: 1.05rem; }
+  .candidate-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* Range 12: 4K Ultra-Wide Displays (1921px and above - e.g. 2560px+, Apple Studio Display) */
@@ -546,6 +590,7 @@ body::after {
   .msg { font-size: 1.15rem; padding: 1.2rem 1.5rem; }
   .hud-value { font-size: 1.35rem; }
   .brand-name { font-size: 1.5rem; }
+  .candidate-grid { grid-template-columns: repeat(5, 1fr); }
 }
 
 /* Range 13: Mobile Horizontal Landscape Mode (height <= 500px) */
