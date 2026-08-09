@@ -1,0 +1,69 @@
+/*
+ * mini-bootstrap.css — a tiny, locally-authored utility layer.
+ * Not a copy of Bootstrap; a small subset of the same *kind* of utilities
+ * (container/grid, spacing scale, buttons, badges) so the app doesn't need
+ * to pull the whole framework for basics, while still loading the full
+ * external Bootstrap (CDN) for components like the navbar + modal helpers.
+ */
+:root {
+  --mb-space-1: 4px;
+  --mb-space-2: 8px;
+  --mb-space-3: 16px;
+  --mb-space-4: 24px;
+  --mb-space-5: 40px;
+}
+
+.mb-container { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 var(--mb-space-4); }
+.mb-row { display: flex; flex-wrap: wrap; margin: 0 calc(-1 * var(--mb-space-3)); }
+.mb-col { flex: 1 1 0; padding: 0 var(--mb-space-3); min-width: 0; }
+.mb-col-auto { flex: 0 0 auto; padding: 0 var(--mb-space-3); }
+
+@media (max-width: 860px) {
+  .mb-row.mb-stack-mobile { flex-direction: column; }
+}
+
+.mb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+  line-height: 1;
+}
+.mb-btn:active { transform: translateY(1px); }
+.mb-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.mb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.mb-gap-1 { gap: var(--mb-space-1); }
+.mb-gap-2 { gap: var(--mb-space-2); }
+.mb-gap-3 { gap: var(--mb-space-3); }
+.mb-gap-4 { gap: var(--mb-space-4); }
+
+.mb-mt-2 { margin-top: var(--mb-space-2); }
+.mb-mt-3 { margin-top: var(--mb-space-3); }
+.mb-mt-4 { margin-top: var(--mb-space-4); }
+.mb-mb-2 { margin-bottom: var(--mb-space-2); }
+.mb-mb-3 { margin-bottom: var(--mb-space-3); }
+.mb-mb-4 { margin-bottom: var(--mb-space-4); }
+
+.mb-flex { display: flex; }
+.mb-flex-col { display: flex; flex-direction: column; }
+.mb-items-center { align-items: center; }
+.mb-justify-between { justify-content: space-between; }
+.mb-hidden { display: none !important; }

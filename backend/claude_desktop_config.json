@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "breeth": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.thebreeth.com/mcp",
+        "--header",
+        "Authorization: Bearer ck_live_7mst05Lu9HmMh-FHkszgADCkVoKgsnJJ9rYdWNdAh3Y"
+      ]
+    }
+  }
+}
