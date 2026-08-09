@@ -9,8 +9,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.12
+      - key: ENV
+        value: production
       - key: JWT_SECRET_KEY
         generateValue: true
+      - key: OLLAMA_API_KEY
+        sync: false
       - key: CLAUDE_API_KEY
         sync: false
       - key: GROQ_API_KEY
@@ -19,3 +23,5 @@ services:
         sync: false
       - key: OLLAMA_HOST
         value: "http://localhost:11434"
+      - key: ALLOW_RULE_BASED_FALLBACK
+        value: "true"
