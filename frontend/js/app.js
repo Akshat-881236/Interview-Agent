@@ -440,12 +440,29 @@ function addAgentMsg(q) {
   wrap.className = "msg agent";
   const isWarn = q.type === "proctor_warning" || q.type === "cancellation";
   const isDebate = q.type === "debate" || q.action === "DEBATE_CHALLENGE";
-  const tag = isWarn ? `⚠️ ${q.topic}` : (isDebate ? `⚔️ DEBATE CHALLENGE · Day ${q.day}` : (q.type === "followup" ? "Follow-up Question" : `Day ${q.day} · ${q.topic}`));
-  
-  wrap.innerHTML = `<div style="font-size:0.75rem; color:${isWarn ? '#f59e0b' : (isDebate ? '#ef4444' : '#a5b4fc')}; margin-bottom:4px; font-weight:600;">${tag}</div>${escapeHtml(q.text)}`;
+  const isGK = q.type === "gk_query_answer" || q.action === "ANSWER_GK_QUERY";
+
+  let tag = `Day ${q.day} · ${q.topic}`;
+  let tagColor = '#a5b4fc';
+
+  if (isWarn) {
+    tag = `⚠️ ${q.topic}`;
+    tagColor = '#f59e0b';
+  } else if (isDebate) {
+    tag = `⚔️ DEBATE CHALLENGE · Day ${q.day}`;
+    tagColor = '#ef4444';
+  } else if (isGK) {
+    tag = `🌐 Internet API Knowledge · General Knowledge Response`;
+    tagColor = '#38bdf8';
+  } else if (q.type === "followup") {
+    tag = `Follow-up Question · Day ${q.day}`;
+  }
+
+  wrap.innerHTML = `<div style="font-size:0.75rem; color:${tagColor}; margin-bottom:4px; font-weight:600;">${tag}</div>${escapeHtml(q.text)}`;
   if (isWarn) wrap.style.border = "1px solid #f59e0b";
   if (isDebate) wrap.style.border = "1px solid rgba(239, 68, 68, 0.4)";
-  
+  if (isGK) wrap.style.border = "1px solid rgba(56, 189, 248, 0.4)";
+
   el("transcriptBody").appendChild(wrap);
   if (q.day) el("dayBadge").textContent = `Day ${q.day}`;
   scrollToBottom();

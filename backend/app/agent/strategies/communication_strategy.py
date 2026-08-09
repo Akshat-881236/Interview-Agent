@@ -1,6 +1,6 @@
 """
 Communication Strategy Engine:
-Directs how AI evaluates candidate answers, corrects misconceptions, answers general queries (e.g. World History), and forms follow-up responses.
+Directs how AI evaluates candidate answers, corrects misconceptions, answers GK & out-of-bound queries (e.g. World History), and forms spoken responses.
 """
 
 import re
@@ -17,16 +17,20 @@ class CommunicationStrategyEngine:
             (r"\b(http|api endpoint|rest|json)\b", "REST Web APIs", "LLM Neural Architecture")
         ]
 
+        self.gk_keywords = [
+            "history of world", "world war", "who is", "who was", "tell me about",
+            "what is the history", "general knowledge", "capital of", "who invented",
+            "who discovered", "geography", "quantum computing", "einstein", "newton"
+        ]
+
     def analyze_candidate_response(self, candidate_answer: str, current_topic: str) -> Dict[str, Any]:
         """
-        Analyzes the candidate's answer for technical misconceptions, off-topic general queries, or core correctness.
+        Analyzes the candidate's answer for technical misconceptions, GK / out-of-bound queries, or core correctness.
         """
         text_lower = candidate_answer.lower()
 
-        # 1. Check for general knowledge queries (e.g. "history of world", "what is war", etc.)
-        is_general_query = any(k in text_lower for k in [
-            "history of world", "world war", "who is", "tell me about", "what is the history", "general knowledge"
-        ])
+        # 1. Check for general knowledge (GK) or out-of-bound queries
+        is_general_query = any(k in text_lower for k in self.gk_keywords)
 
         # 2. Check for technical term misconceptions
         detected_misconception = None
@@ -41,6 +45,7 @@ class CommunicationStrategyEngine:
 
         return {
             "is_general_query": is_general_query,
+            "query_type": "GENERAL_KNOWLEDGE" if is_general_query else "TECHNICAL_ANSWER",
             "detected_misconception": detected_misconception,
             "answer_word_count": len(candidate_answer.split())
         }

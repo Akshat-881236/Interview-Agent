@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import re
 import httpx
 from typing import Optional, Dict, Any, List
 from app.core.config import settings
@@ -11,7 +12,7 @@ logger = logging.getLogger("interview.llm")
 class MultiLLMClient:
     """
     4-Tier Multi-Provider LLM Client with Real-time Web Knowledge Augmentation:
-    Flow: Ollama (Primary) -> Claude (Secondary) -> Groq (Grok) -> Gemini (Fallback)
+    Flow: Ollama (Primary using OLLAMA_API_KEY) -> Claude (Secondary) -> Groq (Grok) -> Gemini (Fallback)
     """
 
     def __init__(self):
@@ -36,7 +37,7 @@ class MultiLLMClient:
         clean_topic = topic_query.replace("Day ", "").strip()
         knowledge_snippets = []
 
-        async with httpx.AsyncClient(timeout=4.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             # 1. DuckDuckGo Instant Answer API
             try:
                 ddg_url = f"https://api.duckduckgo.com/?q={clean_topic}&format=json&no_html=1"
@@ -45,7 +46,7 @@ class MultiLLMClient:
                     data = resp.json()
                     abstract = data.get("AbstractText", "")
                     if abstract:
-                        knowledge_snippets.append(f"Web Summary: {abstract[:300]}")
+                        knowledge_snippets.append(f"Web API Summary: {abstract[:400]}")
             except Exception as e:
                 logger.warning(f"DDG web search notice: {e}")
 
@@ -57,19 +58,19 @@ class MultiLLMClient:
                     data = resp.json()
                     extract = data.get("extract", "")
                     if extract:
-                        knowledge_snippets.append(f"Wikipedia Context: {extract[:350]}")
+                        knowledge_snippets.append(f"Wikipedia API Context: {extract[:450]}")
             except Exception as e:
                 logger.warning(f"Wikipedia web search notice: {e}")
 
         if knowledge_snippets:
             return "\n".join(knowledge_snippets)
-        return f"Real-time Web Knowledge Context: Engineering best practices & system trade-offs for {clean_topic}."
+        return f"Real-time Web Knowledge API Context: Knowledge retrieved for {clean_topic}."
 
     async def generate_concurrent_pass1_ensemble(
         self, curriculum_objectives: str, candidate_answer: str
     ) -> Dict[str, Any]:
         """
-        Runs Ollama, Claude, Groq, and Gemini concurrently in parallel (Pass 1).
+        Runs Ollama (Primary), Claude, Groq, and Gemini concurrently in parallel (Pass 1).
         Aggregates outputs into an ensemble summary.
         """
         prompt = PASS1_SUMMARY_PROMPT.format(
@@ -126,11 +127,12 @@ class MultiLLMClient:
     async def generate_pass2_final_response(self, system_prompt: str, user_message: str) -> Optional[Dict[str, Any]]:
         """
         Pass 2 Response Generation using 4-Tier Fallback Cascade:
-        Ollama (Primary) -> Claude (Secondary) -> Groq (Grok) -> Gemini (Fallback)
+        Ollama (Primary using OLLAMA_API_KEY) -> Claude (Secondary) -> Groq (Grok) -> Gemini (Fallback)
         """
         # Tier 1: Ollama API (Primary)
         res = await self._call_ollama(system_prompt, user_message)
         if res and "spoken_response" in res:
+            res["spoken_response"] = self._clean_spoken_response(res["spoken_response"])
             logger.info("Pass 2 Response finalized by Ollama API (Primary)")
             return res
 
@@ -138,6 +140,7 @@ class MultiLLMClient:
         if self.claude_api_key:
             res = await self._call_claude(system_prompt, user_message)
             if res and "spoken_response" in res:
+                res["spoken_response"] = self._clean_spoken_response(res["spoken_response"])
                 logger.info("Pass 2 Response finalized by Claude API (Secondary)")
                 return res
 
@@ -145,6 +148,7 @@ class MultiLLMClient:
         if self.groq_api_key:
             res = await self._call_groq(system_prompt, user_message)
             if res and "spoken_response" in res:
+                res["spoken_response"] = self._clean_spoken_response(res["spoken_response"])
                 logger.info("Pass 2 Response finalized by Groq API (Secondary Fallback)")
                 return res
 
@@ -152,17 +156,47 @@ class MultiLLMClient:
         if self.gemini_api_key:
             res = await self._call_gemini(system_prompt, user_message)
             if res and "spoken_response" in res:
+                res["spoken_response"] = self._clean_spoken_response(res["spoken_response"])
                 logger.info("Pass 2 Response finalized by Gemini API (Tertiary Fallback)")
                 return res
 
         return None
 
     async def _call_ollama(self, system_prompt: str, user_message: str) -> Optional[Dict[str, Any]]:
-        url = f"{self.ollama_host}/api/generate"
+        """
+        Primary LLM Call to Ollama API.
+        Uses OLLAMA_API_KEY from .env and supports local & cloud Ollama endpoints.
+        """
         headers = {"Content-Type": "application/json"}
         if self.ollama_api_key:
             headers["Authorization"] = f"Bearer {self.ollama_api_key}"
 
+        # 1. Try Ollama Cloud / OpenAI-compatible Endpoint if API Key is present
+        if self.ollama_api_key:
+            cloud_urls = [
+                "https://api.ollama.com/v1/chat/completions",
+                "https://ollama.com/v1/chat/completions"
+            ]
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                for cloud_url in cloud_urls:
+                    payload = {
+                        "model": self.ollama_model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_message}
+                        ],
+                        "response_format": {"type": "json_object"}
+                    }
+                    try:
+                        resp = await client.post(cloud_url, headers=headers, json=payload)
+                        if resp.status_code == 200:
+                            content = resp.json()["choices"][0]["message"]["content"]
+                            return self._extract_json(content)
+                    except Exception as e:
+                        logger.warning(f"Ollama Cloud API ({cloud_url}) notice: {e}")
+
+        # 2. Try Local Ollama Endpoint
+        local_url = f"{self.ollama_host}/api/generate"
         prompt = f"System: {system_prompt}\nUser: {user_message}\nRespond in strict JSON format."
         payload = {
             "model": self.ollama_model,
@@ -173,12 +207,12 @@ class MultiLLMClient:
 
         async with httpx.AsyncClient(timeout=8.0) as client:
             try:
-                resp = await client.post(url, headers=headers, json=payload)
+                resp = await client.post(local_url, headers=headers, json=payload)
                 if resp.status_code == 200:
                     out = resp.json().get("response", "")
                     return self._extract_json(out)
             except Exception as e:
-                logger.warning(f"Ollama API call notice: {e}")
+                logger.warning(f"Local Ollama API notice: {e}")
 
         return None
 
@@ -281,5 +315,17 @@ class MultiLLMClient:
                 except Exception:
                     pass
         return None
+
+    @staticmethod
+    def _clean_spoken_response(text: str) -> str:
+        """
+        Cleans up spoken response string so it contains 100% natural, clean spoken English
+        without raw JSON syntax, markdown asterisks, or code blocks.
+        """
+        if not text:
+            return ""
+        clean = re.sub(r'[*_`#\[\]]', '', text)
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        return clean
 
 llm_client = MultiLLMClient()

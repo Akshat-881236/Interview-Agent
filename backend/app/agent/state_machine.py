@@ -29,7 +29,7 @@ class InterviewStateMachine:
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Executes interview turn with Smart Strategy Engine, Dynamic Web API Knowledge Sync,
-        and 4-Tier Model Cascade (Ollama -> Claude -> Groq -> Gemini).
+        and Primary Ollama Model API Key Cascade (Ollama -> Claude -> Groq -> Gemini).
         """
         plan = session["plan"]
         idx = session["plan_index"]
@@ -42,13 +42,13 @@ class InterviewStateMachine:
         rag_context_str = f"Topic: {topic_name}\nModule: {day_doc.get('module', '')}\nObjectives:\n" + "\n".join(f"- {o}" for o in objectives)
 
         # ---------------------------------------------------------------------
-        # 1. COMMUNICATION STRATEGY & DYNAMIC WEB KNOWLEDGE SEARCH
+        # 1. COMMUNICATION STRATEGY & DYNAMIC INTERNET API KNOWLEDGE SEARCH
         # ---------------------------------------------------------------------
         strategy_analysis = communication_engine.analyze_candidate_response(user_answer, topic_name)
         web_knowledge_context = await knowledge_sync_engine.fetch_dynamic_knowledge(user_answer, topic_name)
 
         # ---------------------------------------------------------------------
-        # 2. PARALLEL PASS 1 ENSEMBLE: Ollama, Claude, Groq & Gemini
+        # 2. PARALLEL PASS 1 ENSEMBLE: Ollama (Primary API Key), Claude, Groq & Gemini
         # ---------------------------------------------------------------------
         pass1_ensemble = await llm_client.generate_concurrent_pass1_ensemble(rag_context_str, user_answer)
 
@@ -123,7 +123,7 @@ class InterviewStateMachine:
             return score, warning_q
 
         # ---------------------------------------------------------------------
-        # 4. PASS 2 LLM: Ollama (Primary) -> Claude -> Groq -> Gemini
+        # 4. PASS 2 LLM: Ollama (Primary OLLAMA_API_KEY) -> Claude -> Groq -> Gemini
         # ---------------------------------------------------------------------
         questions_asked = sum(1 for t in session["turns"] if t["role"] == "agent")
         days_covered = len({t["day"] for t in session["turns"] if t["role"] == "agent"})
@@ -147,15 +147,15 @@ class InterviewStateMachine:
 
         user_message = (
             f"Previous Question Asked: {current_question.get('text', '')}\n"
-            f"Candidate's Exact Spoken Answer: {user_answer}\n"
+            f"Candidate's Exact Input/Answer: {user_answer}\n"
             f"Debate Mode: {debate_mode}\n"
-            f"INSTRUCTION: First sentence MUST directly address/evaluate/correct the candidate's answer. Second sentence ask follow-up."
+            f"INSTRUCTION: If candidate asked a GK or out-of-bound query (e.g. History of World, science, geography), answer directly using web API knowledge. Otherwise evaluate technical answer. Then transition to next question."
         )
 
         pass2_result = await llm_client.generate_pass2_final_response(system_prompt, user_message)
 
         if pass2_result and "spoken_response" in pass2_result:
-            action = pass2_result.get("action", "DEBATE_CHALLENGE" if debate_mode else "ASK_NEW_TOPIC")
+            action = pass2_result.get("action", "ANSWER_GK_QUERY" if strategy_analysis.get("is_general_query") else "ASK_NEW_TOPIC")
             thought = pass2_result.get("internal_thought_process", "")
             spoken = pass2_result.get("spoken_response", "")
 
@@ -163,6 +163,17 @@ class InterviewStateMachine:
                 session["status"] = "completed"
                 session["current_question"] = None
                 next_q = None
+            elif action == "ANSWER_GK_QUERY" or strategy_analysis.get("is_general_query"):
+                next_q = {
+                    "id": f"gk_{current_day}_{questions_asked}",
+                    "type": "gk_query_answer",
+                    "day": current_day,
+                    "topic": "General Knowledge Inquiry",
+                    "module": "Out-of-Bound / Internet Knowledge Search",
+                    "text": spoken,
+                    "thought": thought
+                }
+                session["current_question"] = next_q
             elif debate_mode or action == "DEBATE_CHALLENGE":
                 next_q = {
                     "id": f"deb_{current_day}_{questions_asked}",
@@ -210,7 +221,7 @@ class InterviewStateMachine:
             if misconception:
                 prefix = f"That sounds like {misconception['confused_term']} rather than {misconception['actual_term']}. "
             elif strategy_analysis.get("is_general_query"):
-                prefix = "Here is a brief overview from web sources. "
+                prefix = f"According to web search APIs regarding '{user_answer}': here is a concise overview. "
             else:
                 prefix = ""
 
