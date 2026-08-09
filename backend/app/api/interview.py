@@ -77,10 +77,12 @@ def _serialize_question(q):
     return {k: q[k] for k in ("id", "type", "day", "topic", "module", "text") if k in q}
 
 @router.get("/curriculum")
+@router.get("/v1/curriculum")
 def get_curriculum():
     return CURRICULUM
 
 @router.get("/candidates")
+@router.get("/v1/candidates")
 def get_candidates(user: Optional[dict] = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required to view candidate profiles")
@@ -92,6 +94,7 @@ def get_candidates(user: Optional[dict] = Depends(get_current_user)):
     }
 
 @router.post("/interview/start")
+@router.post("/v1/interview/start")
 def start_interview(req: StartRequest, user: Optional[dict] = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required to start an interview session")
@@ -128,13 +131,15 @@ def start_interview(req: StartRequest, user: Optional[dict] = Depends(get_curren
         "candidate_name": candidate["name"],
         "question": _serialize_question(q),
         "progress": _progress(session),
+        "initial_agent_message": q["text"]
     }
 
 @router.post("/interview/proctor_check")
+@router.post("/v1/interview/proctor_check")
 async def proctor_check(req: dict, user: Optional[dict] = Depends(get_current_user)):
     """
     Strict Live Real-time Camera Perception Check Endpoint.
-    Evaluates face presence, off-screen gaze (left/right/away), and multiple faces.
+    Evaluates face presence, off-screen gaze (left/right/away), multiple faces, tab switches, and secondary devices.
     """
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -161,10 +166,10 @@ async def proctor_check(req: dict, user: Optional[dict] = Depends(get_current_us
         reason = "Proctor Warning: Off-screen gaze detected looking right. Please look straight at the main screen."
     elif metrics.face_count > 1:
         is_flagged = True
-        reason = "Proctor Warning: Multiple individuals detected in camera frame. The interview must be taken alone."
+        reason = "Proctor Warning: Multiple individuals / entities detected in camera frame. The interview must be taken alone."
     elif metrics.suspicious_flag or metrics.looking_away:
         is_flagged = True
-        reason = f"Proctor Warning: Off-screen camera distraction detected ({metrics.violation_reason or 'looking away'})."
+        reason = f"Proctor Warning: Off-screen distraction / tab switch detected ({metrics.violation_reason or 'looking away'})."
 
     if is_flagged:
         current_v = session.get("proctor_violations", 0) + 1
@@ -191,6 +196,8 @@ async def proctor_check(req: dict, user: Optional[dict] = Depends(get_current_us
     }
 
 @router.post("/interview/answer")
+@router.post("/v1/interview/answer")
+@router.post("/v1/interview/chat")
 async def answer(req: AnswerRequest, user: Optional[dict] = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required to submit an answer")
@@ -217,10 +224,13 @@ async def answer(req: AnswerRequest, user: Optional[dict] = Depends(get_current_
             "confidence": score.get("confidence", 1.0)
         },
         "question": _serialize_question(next_q),
+        "agent_message": next_q["text"] if next_q else "Interview complete.",
+        "is_completed": next_q is None,
         "progress": _progress(session),
     }
 
 @router.get("/interview/{session_id}/report")
+@router.get("/v1/interview/feedback/{session_id}")
 def report(session_id: str, user: Optional[dict] = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required to view feedback report")
