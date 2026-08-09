@@ -135,10 +135,14 @@ function initThemeEngine() {
 
 function setupMobileMenu() {
   const toggleBtn = el("topbarMenuToggle");
+  const iconEl = el("topbarToggleIcon");
   const controlsEl = el("topbarControls");
   if (toggleBtn && controlsEl) {
     toggleBtn.addEventListener("click", () => {
-      controlsEl.classList.toggle("active");
+      const isActive = controlsEl.classList.toggle("active");
+      if (iconEl) {
+        iconEl.textContent = isActive ? "✕" : "☰";
+      }
     });
   }
 }
