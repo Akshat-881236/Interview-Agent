@@ -68,6 +68,7 @@ async function api(path, opts = {}) {
 
 // ---------- Boot ----------
 (async function init() {
+  initThemeEngine();
   AudioEngine.init();
   VisualizerEngine.init("aiVisualizerCanvas");
   setupAuthEvents();
@@ -84,6 +85,20 @@ async function api(path, opts = {}) {
 
   checkCandidateAccess();
 })();
+
+function initThemeEngine() {
+  const savedTheme = localStorage.getItem("interview_theme") || "cyberpunk";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  const themeEl = el("themeSelect");
+  if (themeEl) {
+    themeEl.value = savedTheme;
+    themeEl.addEventListener("change", (e) => {
+      const selected = e.target.value;
+      document.documentElement.setAttribute("data-theme", selected);
+      localStorage.setItem("interview_theme", selected);
+    });
+  }
+}
 
 async function checkCandidateAccess() {
   Auth.updateUI();

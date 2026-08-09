@@ -1,35 +1,138 @@
-:root {
-  --bg-dark: #0f172a;
+/* ==========================================================================
+   THE INTERVIEW AGENT — DESIGN SYSTEM & RESPONSIVE MEDIA STYLES
+   Themes: Dark Cyberpunk, Deep Navy, Emerald Aurora, Solar Light
+   Breakpoint Grid: 14+ Media Ranges (320px to 2560px 4K + Touch/Retina)
+   ========================================================================== */
+
+/* ---------- 1. Design Tokens & Theme Palettes ---------- */
+:root, [data-theme="cyberpunk"] {
+  --bg-dark: #090d16;
+  --bg-gradient: radial-gradient(circle at 50% -20%, #1e1b4b 0%, #0f172a 60%, #090d16 100%);
   --panel-bg: rgba(30, 41, 59, 0.85);
   --panel-border: rgba(255, 255, 255, 0.15);
   --accent-primary: #6366f1;
   --accent-purple: #a855f7;
   --accent-amber: #f59e0b;
+  --accent-cyan: #38bdf8;
   --text-main: #f8fafc;
   --text-muted: #cbd5e1;
   --text-dim: #94a3b8;
-  --card-glow: rgba(99, 102, 241, 0.2);
+  --card-glow: rgba(99, 102, 241, 0.25);
+  --orb-1: rgba(99, 102, 241, 0.2);
+  --orb-2: rgba(168, 85, 247, 0.15);
 }
 
+[data-theme="navy"] {
+  --bg-dark: #030712;
+  --bg-gradient: radial-gradient(circle at 50% -20%, #0c4a6e 0%, #030712 75%);
+  --panel-bg: rgba(15, 23, 42, 0.88);
+  --panel-border: rgba(56, 189, 248, 0.2);
+  --accent-primary: #0284c7;
+  --accent-purple: #06b6d4;
+  --accent-amber: #f59e0b;
+  --accent-cyan: #38bdf8;
+  --text-main: #f0f9ff;
+  --text-muted: #bae6fd;
+  --text-dim: #7dd3fc;
+  --card-glow: rgba(14, 165, 233, 0.3);
+  --orb-1: rgba(14, 165, 233, 0.25);
+  --orb-2: rgba(6, 182, 212, 0.2);
+}
+
+[data-theme="aurora"] {
+  --bg-dark: #022c22;
+  --bg-gradient: radial-gradient(circle at 50% -20%, #065f46 0%, #022c22 80%);
+  --panel-bg: rgba(6, 78, 59, 0.85);
+  --panel-border: rgba(52, 211, 153, 0.2);
+  --accent-primary: #10b981;
+  --accent-purple: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-cyan: #6ee7b7;
+  --text-main: #ecfdf5;
+  --text-muted: #a7f3d0;
+  --text-dim: #6ee7b7;
+  --card-glow: rgba(16, 185, 129, 0.3);
+  --orb-1: rgba(16, 185, 129, 0.25);
+  --orb-2: rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="solar"] {
+  --bg-dark: #f8fafc;
+  --bg-gradient: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%);
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --panel-border: rgba(148, 163, 184, 0.3);
+  --accent-primary: #4f46e5;
+  --accent-purple: #7c3aed;
+  --accent-amber: #d97706;
+  --accent-cyan: #0284c7;
+  --text-main: #0f172a;
+  --text-muted: #334155;
+  --text-dim: #64748b;
+  --card-glow: rgba(79, 70, 229, 0.15);
+  --orb-1: rgba(99, 102, 241, 0.1);
+  --orb-2: rgba(168, 85, 247, 0.08);
+}
+
+/* ---------- 2. Animated Ambient Mesh Background ---------- */
 body {
   background-color: var(--bg-dark);
-  background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 75%);
+  background-image: var(--bg-gradient);
   color: var(--text-main);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
   margin: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+  transition: background 0.4s ease, color 0.4s ease;
 }
 
+body::before, body::after {
+  content: "";
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  pointer-events: none;
+  animation: auroraFlow 18s infinite alternate ease-in-out;
+}
+
+body::before {
+  top: -100px;
+  left: -100px;
+  background: var(--orb-1);
+}
+
+body::after {
+  bottom: -100px;
+  right: -100px;
+  background: var(--orb-2);
+  animation-delay: -9s;
+}
+
+@keyframes auroraFlow {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(120px, 80px) scale(1.15); }
+  100% { transform: translate(-80px, 140px) scale(0.9); }
+}
+
+/* ---------- 3. Header Topbar & Theme Selector Controls ---------- */
 .topbar {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--panel-border);
   padding: 0.85rem 1.5rem;
   position: sticky;
   top: 0;
   z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+[data-theme="solar"] .topbar {
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .brand-mark {
@@ -42,40 +145,52 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 15px var(--card-glow);
 }
 
 .brand-name {
   font-family: 'Fraunces', serif;
   font-weight: 700;
   font-size: 1.2rem;
-  background: linear-gradient(135deg, #fff, #cbd5e1);
+  background: linear-gradient(135deg, var(--text-main), var(--text-muted));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.theme-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-select option {
+  background: #0f172a;
+  color: #f8fafc;
 }
 
 .auth-badge {
   background: rgba(99, 102, 241, 0.25);
   border: 1px solid rgba(99, 102, 241, 0.5);
-  color: #e0e7ff;
+  color: var(--text-main);
   padding: 0.35rem 0.85rem;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
-/* Call Room Grid Layout */
+/* ---------- 4. Call Room Studio & Panels ---------- */
 .room-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   margin-top: 1rem;
-}
-
-@media (max-width: 992px) {
-  .room-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 .video-studio-panel {
@@ -95,7 +210,7 @@ body {
   background: #020617;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--panel-border);
   height: 220px;
   display: flex;
   align-items: center;
@@ -129,36 +244,20 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* Live 20-Dog Proctoring Ticker HUD */
-.dog-proctor-hud {
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 10px;
-  padding: 0.65rem 0.85rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .telemetry-hud {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.7);
   padding: 0.75rem;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--panel-border);
 }
 
-.hud-item {
-  text-align: center;
-}
+.hud-item { text-align: center; }
 .hud-label {
   font-size: 0.7rem;
-  color: #cbd5e1;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
@@ -191,17 +290,17 @@ body {
 }
 
 .btn-control:hover {
-  background: rgba(99, 102, 241, 0.4);
+  background: var(--accent-primary);
   transform: translateY(-2px);
 }
 
 .btn-control.active {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 12px var(--card-glow);
 }
 
-/* Transcript Panel */
+/* ---------- 5. Transcript & Message Components ---------- */
 .transcript-panel {
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
@@ -236,28 +335,34 @@ body {
   border-radius: 12px;
   line-height: 1.5;
   font-size: 0.95rem;
+  animation: fadeInMsg 0.3s ease forwards;
+}
+
+@keyframes fadeInMsg {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .msg.agent {
   align-self: flex-start;
   background: rgba(30, 41, 59, 0.95);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid var(--accent-primary);
   border-bottom-left-radius: 2px;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .msg.candidate {
   align-self: flex-end;
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  background: linear-gradient(135deg, var(--accent-primary), #4338ca);
   color: white;
   border-bottom-right-radius: 2px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 4px 12px var(--card-glow);
 }
 
 .msg.system {
   align-self: center;
   background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-size: 0.82rem;
   border-radius: 20px;
   padding: 0.4rem 1rem;
@@ -282,33 +387,22 @@ body {
   font-size: 0.95rem;
 }
 
+[data-theme="solar"] .composer textarea {
+  background: #ffffff;
+}
+
 .composer textarea:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 10px var(--card-glow);
 }
 
-/* High-Contrast Glassmorphism Modal Overlay Fix */
+/* High-Contrast Glassmorphism Modal Fix */
 .modal-content {
   background: #1e293b !important;
   color: #f8fafc !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
-}
-
-.modal-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-.modal-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-
-.modal-body {
-  color: #f1f5f9 !important;
-  font-size: 1.05rem !important;
-  line-height: 1.6 !important;
 }
 
 /* Candidate Card Grid */
@@ -343,4 +437,124 @@ body {
   border-radius: 16px;
   padding: 2rem;
   margin-top: 1.5rem;
+}
+
+
+/* ==========================================================================
+   6. 14+ DEVICE MEDIA RESPONSIVENESS BREAKPOINT SYSTEM
+   Ranges: 320px, 375px, 414px, 480px, 576px, 768px, 992px, 1024px,
+           1200px, 1440px, 1600px, 1920px, 2560px (4K), Touch & Orientation
+   ========================================================================== */
+
+/* Range 1: Extra Small / Compact Feature Phones (320px and below) */
+@media (max-width: 320px) {
+  .topbar { padding: 0.5rem 0.75rem; }
+  .brand-name { font-size: 1rem; }
+  .brand-mark { width: 32px; height: 32px; font-size: 0.85rem; }
+  .media-frame { height: 160px; }
+  .transcript-panel { height: 440px; }
+  .btn-control { width: 38px; height: 38px; font-size: 0.9rem; }
+  .hud-value { font-size: 0.9rem; }
+}
+
+/* Range 2: Standard Mobile Phones (321px to 375px - e.g. iPhone SE, Mini) */
+@media (min-width: 321px) and (max-width: 375px) {
+  .topbar { padding: 0.65rem 1rem; }
+  .media-frame { height: 180px; }
+  .transcript-panel { height: 480px; }
+}
+
+/* Range 3: Large Mobile / Plus Phones (376px to 414px - e.g. iPhone Max, Pixel XL) */
+@media (min-width: 376px) and (max-width: 414px) {
+  .media-frame { height: 190px; }
+  .transcript-panel { height: 500px; }
+}
+
+/* Range 4: Phablets & Small Foldables (415px to 576px) */
+@media (min-width: 415px) and (max-width: 576px) {
+  .media-frame { height: 200px; }
+  .transcript-panel { height: 520px; }
+}
+
+/* Range 5: Small Tablets & Large Foldables (577px to 768px - e.g. iPad Mini) */
+@media (min-width: 577px) and (max-width: 768px) {
+  .room-layout { grid-template-columns: 1fr; }
+  .media-frame { height: 240px; }
+  .transcript-panel { height: 550px; }
+}
+
+/* Range 6: Tablets Landscape / Small Laptops (769px to 992px) */
+@media (min-width: 769px) and (max-width: 992px) {
+  .room-layout { grid-template-columns: 1fr; }
+  .media-frame { height: 260px; }
+  .transcript-panel { height: 580px; }
+}
+
+/* Range 7: iPad Pro & Small Laptops (993px to 1024px) */
+@media (min-width: 993px) and (max-width: 1024px) {
+  .room-layout { grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .media-frame { height: 210px; }
+  .transcript-panel { height: 580px; }
+}
+
+/* Range 8: Standard Laptop Displays (1025px to 1200px - e.g. MacBook Air 13") */
+@media (min-width: 1025px) and (max-width: 1200px) {
+  .room-layout { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .media-frame { height: 220px; }
+  .transcript-panel { height: 600px; }
+}
+
+/* Range 9: Large Laptops & Standard Monitors (1201px to 1440px - e.g. MacBook Pro 16") */
+@media (min-width: 1201px) and (max-width: 1440px) {
+  .media-frame { height: 240px; }
+  .transcript-panel { height: 640px; }
+}
+
+/* Range 10: Desktop Monitors & 1080p Full HD (1441px to 1600px) */
+@media (min-width: 1441px) and (max-width: 1600px) {
+  .container { max-width: 1520px; }
+  .media-frame { height: 260px; }
+  .transcript-panel { height: 680px; }
+}
+
+/* Range 11: High-Res QHD / 2K Monitors (1601px to 1920px) */
+@media (min-width: 1601px) and (max-width: 1920px) {
+  .container { max-width: 1800px; }
+  .media-frame { height: 280px; }
+  .transcript-panel { height: 720px; }
+  .msg { font-size: 1.05rem; }
+}
+
+/* Range 12: 4K Ultra-Wide Displays (1921px and above - e.g. 2560px+, Apple Studio Display) */
+@media (min-width: 1921px) {
+  .container { max-width: 2200px; }
+  .media-frame { height: 340px; }
+  .transcript-panel { height: 820px; }
+  .msg { font-size: 1.15rem; padding: 1.2rem 1.5rem; }
+  .hud-value { font-size: 1.35rem; }
+  .brand-name { font-size: 1.5rem; }
+}
+
+/* Range 13: Mobile Horizontal Landscape Mode (height <= 500px) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar { padding: 0.4rem 1rem; }
+  .room-layout { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .media-frame { height: 130px; }
+  .transcript-panel { height: 320px; }
+  .composer textarea { height: 40px; }
+}
+
+/* Range 14: Touchscreens & Stylus Pointer Devices */
+@media (hover: none) and (pointer: coarse) {
+  .btn-control { width: 50px; height: 50px; }
+  .candidate-card { padding: 1.5rem; }
+  .composer textarea { font-size: 1rem; }
+}
+
+/* Range 15: High-DPI Retina Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .brand-mark, .btn-control, .candidate-card {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
