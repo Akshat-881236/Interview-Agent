@@ -1,4 +1,4 @@
-// Perception & Emotion Analytics Engine — Real-time Video Stream Scanner & Gaze Telemetry
+// Perception Engine — Real-time Video Stream Scanner, Phone Reflection, Tab Switch & Gaze Telemetry
 
 const PerceptionEngine = {
   stream: null,
@@ -43,6 +43,7 @@ const PerceptionEngine = {
 
       this.initOffscreenCanvas();
       this.startRealtimeStreamScanner();
+      this.initFocusAndTabListeners();
       return true;
     } catch (err) {
       console.warn("Could not access camera/microphone:", err);
@@ -50,6 +51,28 @@ const PerceptionEngine = {
       this.isMicActive = false;
       return false;
     }
+  },
+
+  initFocusAndTabListeners() {
+    // 1. Browser Tab Switch Detection
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden" && this.isCameraActive) {
+        this.triggerFlag("tab_switch", "Proctor Violation: Candidate switched browser tab or minimized window.");
+        if (this.onProctorEventCallback) {
+          this.onProctorEventCallback(this.getMetrics());
+        }
+      }
+    });
+
+    // 2. Window Blur / Notification Pop-up Focus Theft Detection
+    window.addEventListener("blur", () => {
+      if (this.isCameraActive) {
+        this.triggerFlag("focus_loss", "Proctor Violation: Window focus lost / notification pop-up interference.");
+        if (this.onProctorEventCallback) {
+          this.onProctorEventCallback(this.getMetrics());
+        }
+      }
+    });
   },
 
   initOffscreenCanvas() {
@@ -76,29 +99,39 @@ const PerceptionEngine = {
         const imgData = this.offscreenCtx.getImageData(0, 0, 160, 120);
         const data = imgData.data;
 
-        // Calculate average pixel luminance and skin tone color heuristics in center frame
         let totalLuma = 0;
-        let skinPixels = 0;
+        let skinPixelsLeft = 0;
+        let skinPixelsRight = 0;
+        let phoneGlarePixels = 0;
 
-        for (let i = 0; i < data.length; i += 16) {
-          const r = data[i];
-          const g = data[i+1];
-          const b = data[i+2];
-          const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-          totalLuma += luma;
+        for (let y = 0; y < 120; y += 4) {
+          for (let x = 0; x < 160; x += 4) {
+            const idx = (y * 160 + x) * 4;
+            const r = data[idx];
+            const g = data[idx+1];
+            const b = data[idx+2];
+            const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+            totalLuma += luma;
 
-          // Simple skin tone heuristic range (RGB)
-          if (r > 60 && g > 40 && b > 20 && r > g && r > b && (r - Math.min(g, b)) > 15) {
-            skinPixels++;
+            // Skin tone detection across left and right halves
+            if (r > 60 && g > 40 && b > 20 && r > g && r > b && (r - Math.min(g, b)) > 15) {
+              if (x < 80) skinPixelsLeft++;
+              else skinPixelsRight++;
+            }
+
+            // Phone screen glare & high-intensity screen reflection detection (e.g. eye/glasses reflection)
+            if (r > 220 && g > 230 && b > 240 && luma > 225) {
+              phoneGlarePixels++;
+            }
           }
         }
 
-        const sampleCount = data.length / 16;
-        const avgLuma = totalLuma / sampleCount;
-        const skinRatio = skinPixels / sampleCount;
+        const totalSamples = (120 / 4) * (160 / 4);
+        const avgLuma = totalLuma / totalSamples;
+        const totalSkinRatio = (skinPixelsLeft + skinPixelsRight) / totalSamples;
 
-        // Face presence decision: If skin ratio is too low or camera covered/removed face
-        if (skinRatio < 0.04 || avgLuma < 12) {
+        // 1. Face presence check
+        if (totalSkinRatio < 0.04 || avgLuma < 12) {
           noFaceFrames++;
           if (noFaceFrames >= 3) {
             this.faceCount = 0;
@@ -110,6 +143,23 @@ const PerceptionEngine = {
         } else {
           noFaceFrames = 0;
           this.faceCount = 1;
+        }
+
+        // 2. Multiple Entities Detection (Distinct skin clusters on both sides)
+        if (skinPixelsLeft > 40 && skinPixelsRight > 40 && Math.abs(skinPixelsLeft - skinPixelsRight) < 15) {
+          this.faceCount = 2;
+          this.triggerFlag("multiple_faces", "Multiple individuals / entities detected in camera region.");
+          if (this.onProctorEventCallback) {
+            this.onProctorEventCallback(this.getMetrics());
+          }
+        }
+
+        // 3. Secondary Phone Screen Reflection Detection
+        if (phoneGlarePixels > 25) {
+          this.triggerFlag("phone_detected", "Proctor Violation: Secondary phone device / screen reflection detected.");
+          if (this.onProctorEventCallback) {
+            this.onProctorEventCallback(this.getMetrics());
+          }
         }
 
       } catch (e) {

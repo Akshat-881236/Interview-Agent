@@ -101,6 +101,7 @@ async function api(path, opts = {}) {
 // ---------- Boot ----------
 (async function init() {
   initThemeEngine();
+  setupMobileMenu();
   AudioEngine.init();
   VisualizerEngine.init("aiVisualizerCanvas");
   setupAuthEvents();
@@ -128,6 +129,16 @@ function initThemeEngine() {
       const selected = e.target.value;
       document.documentElement.setAttribute("data-theme", selected);
       localStorage.setItem("interview_theme", selected);
+    });
+  }
+}
+
+function setupMobileMenu() {
+  const toggleBtn = el("topbarMenuToggle");
+  const controlsEl = el("topbarControls");
+  if (toggleBtn && controlsEl) {
+    toggleBtn.addEventListener("click", () => {
+      controlsEl.classList.toggle("active");
     });
   }
 }

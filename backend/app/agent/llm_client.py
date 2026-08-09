@@ -11,7 +11,7 @@ logger = logging.getLogger("interview.llm")
 
 class MultiLLMClient:
     """
-    4-Tier Multi-Provider LLM Client with Real-time Web Knowledge Augmentation:
+    4-Tier Multi-Provider LLM Client with Lengthy Detailed Response Generation (500 to 15,000+ Chars):
     Flow: Ollama (Primary using OLLAMA_API_KEY) -> Claude (Secondary) -> Groq (Grok) -> Gemini (Fallback)
     """
 
@@ -46,7 +46,7 @@ class MultiLLMClient:
                     data = resp.json()
                     abstract = data.get("AbstractText", "")
                     if abstract:
-                        knowledge_snippets.append(f"Web API Summary: {abstract[:400]}")
+                        knowledge_snippets.append(f"Web API Summary: {abstract[:600]}")
             except Exception as e:
                 logger.warning(f"DDG web search notice: {e}")
 
@@ -58,13 +58,13 @@ class MultiLLMClient:
                     data = resp.json()
                     extract = data.get("extract", "")
                     if extract:
-                        knowledge_snippets.append(f"Wikipedia API Context: {extract[:450]}")
+                        knowledge_snippets.append(f"Wikipedia API Context: {extract[:750]}")
             except Exception as e:
                 logger.warning(f"Wikipedia web search notice: {e}")
 
         if knowledge_snippets:
             return "\n".join(knowledge_snippets)
-        return f"Real-time Web Knowledge API Context: Knowledge retrieved for {clean_topic}."
+        return f"Real-time Web Knowledge API Context: Detailed knowledge retrieved for {clean_topic}."
 
     async def generate_concurrent_pass1_ensemble(
         self, curriculum_objectives: str, candidate_answer: str
@@ -163,21 +163,16 @@ class MultiLLMClient:
         return None
 
     async def _call_ollama(self, system_prompt: str, user_message: str) -> Optional[Dict[str, Any]]:
-        """
-        Primary LLM Call to Ollama API.
-        Uses OLLAMA_API_KEY from .env and supports local & cloud Ollama endpoints.
-        """
         headers = {"Content-Type": "application/json"}
         if self.ollama_api_key:
             headers["Authorization"] = f"Bearer {self.ollama_api_key}"
 
-        # 1. Try Ollama Cloud / OpenAI-compatible Endpoint if API Key is present
         if self.ollama_api_key:
             cloud_urls = [
                 "https://api.ollama.com/v1/chat/completions",
                 "https://ollama.com/v1/chat/completions"
             ]
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 for cloud_url in cloud_urls:
                     payload = {
                         "model": self.ollama_model,
@@ -185,6 +180,7 @@ class MultiLLMClient:
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": user_message}
                         ],
+                        "max_tokens": 4096,
                         "response_format": {"type": "json_object"}
                     }
                     try:
@@ -195,7 +191,6 @@ class MultiLLMClient:
                     except Exception as e:
                         logger.warning(f"Ollama Cloud API ({cloud_url}) notice: {e}")
 
-        # 2. Try Local Ollama Endpoint
         local_url = f"{self.ollama_host}/api/generate"
         prompt = f"System: {system_prompt}\nUser: {user_message}\nRespond in strict JSON format."
         payload = {
@@ -205,7 +200,7 @@ class MultiLLMClient:
             "format": "json"
         }
 
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             try:
                 resp = await client.post(local_url, headers=headers, json=payload)
                 if resp.status_code == 200:
@@ -228,12 +223,12 @@ class MultiLLMClient:
         }
         payload = {
             "model": self.claude_model,
-            "max_tokens": 1024,
+            "max_tokens": 4096,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_message}]
         }
 
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             try:
                 resp = await client.post(url, headers=headers, json=payload)
                 if resp.status_code == 200:
@@ -255,7 +250,7 @@ class MultiLLMClient:
         }
 
         models = [self.groq_model, "llama-3.3-70b-versatile", "llama-3.1-70b-versatile"]
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             for m in models:
                 payload = {
                     "model": m,
@@ -263,6 +258,7 @@ class MultiLLMClient:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_message}
                     ],
+                    "max_tokens": 4096,
                     "response_format": {"type": "json_object"},
                     "temperature": 0.4
                 }
@@ -287,10 +283,11 @@ class MultiLLMClient:
             "contents": [{"parts": [{"text": user_message}]}],
             "generationConfig": {
                 "response_mime_type": "application/json",
+                "maxOutputTokens": 4096,
                 "temperature": 0.4
             }
         }
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             try:
                 resp = await client.post(url, headers=headers, json=payload)
                 if resp.status_code == 200:
@@ -319,13 +316,21 @@ class MultiLLMClient:
     @staticmethod
     def _clean_spoken_response(text: str) -> str:
         """
-        Cleans up spoken response string so it contains 100% natural, clean spoken English
-        without raw JSON syntax, markdown asterisks, or code blocks.
+        Cleans up spoken response string, enforcing sentence completion & terminal full stop/question mark.
         """
         if not text:
             return ""
         clean = re.sub(r'[*_`#\[\]]', '', text)
         clean = re.sub(r'\s+', ' ', clean).strip()
+
+        # Terminal Punctuation Guarantee: Ensure last sentence ends with '.', '!', or '?'
+        if not clean.endswith(('.', '!', '?')):
+            last_punc = max(clean.rfind('.'), clean.rfind('!'), clean.rfind('?'))
+            if last_punc > len(clean) * 0.6:
+                clean = clean[:last_punc + 1]
+            else:
+                clean = clean + "."
+
         return clean
 
 llm_client = MultiLLMClient()

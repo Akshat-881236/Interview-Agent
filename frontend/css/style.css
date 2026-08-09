@@ -132,7 +132,7 @@ body::after {
   100% { transform: translate(-80px, 140px) scale(0.9); }
 }
 
-/* ---------- 3. Header Topbar & Theme Selector Controls ---------- */
+/* ---------- 3. Header Topbar & Collapsible Mobile Menu Controls ---------- */
 .topbar {
   background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(16px);
@@ -196,6 +196,56 @@ body::after {
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+/* Mobile Topbar Menu Toggle Button */
+.topbar-toggler {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topbar-toggler:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+@media (max-width: 991.98px) {
+  .topbar-controls {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding-top: 1rem;
+    border-top: 1px solid var(--panel-border);
+    margin-top: 0.75rem;
+    animation: fadeInDown 0.25s ease forwards;
+  }
+
+  .topbar-controls.active {
+    display: flex !important;
+  }
+
+  .topbar-controls .theme-select,
+  .topbar-controls .btn,
+  .topbar-controls .auth-badge,
+  .topbar-controls #apiStatus {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------- 4. Call Room Studio & Panels ---------- */
@@ -457,41 +507,6 @@ body::after {
    6. ADVANCED ORGANIZATIONAL MEDIA RESPONSIVENESS (15+ BREAKPOINTS)
    Pixel-perfect styling for Phones, Tablets, Foldables, Laptops, 4K & Mobile
    ========================================================================== */
-
-/* Mobile Topbar Flex Grid Fix (< 576px) */
-@media (max-width: 576px) {
-  .topbar {
-    padding: 0.5rem 0.75rem;
-  }
-  .topbar .container-fluid {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  .topbar .brand-name {
-    font-size: 0.95rem;
-  }
-  .topbar .brand-mark {
-    width: 32px;
-    height: 32px;
-    font-size: 0.85rem;
-  }
-  .topbar .theme-select {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
-  }
-  .topbar .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
-  .topbar #apiStatus {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-  }
-  .auth-badge {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.5rem;
-  }
-}
 
 /* Range 1: Extra Small / Compact Feature Phones (320px and below) */
 @media (max-width: 320px) {
